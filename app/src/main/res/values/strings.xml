@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">Ratatoskr</string>
+    <string name="accessibility_service_description">WeChat accessibility reader</string>
+</resources>
