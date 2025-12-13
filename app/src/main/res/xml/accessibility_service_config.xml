@@ -6,7 +6,7 @@
     android:canRetrieveWindowContent="true"
     android:canRequestFilterKeyEvents="false"
     android:canPerformGestures="false"
-    android:packageNames="com.tencent.mm"
+    android:packageNames="com.tencent.mm,com.tencent.mobileqq"
     android:description="@string/accessibility_service_description"
     android:settingsActivity=""
     android:accessibilityFlags="flagReportViewIds|flagRetrieveInteractiveWindows" />
