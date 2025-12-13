@@ -21,7 +21,7 @@ class DeepSeekAiService : AiService {
         private const val TAG = "DeepSeekAiService"
         
         // TODO: 在此处填入你的 DeepSeek API Key
-        private const val API_KEY = "sk-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+        private const val API_KEY = "sk-"
         
         private const val API_URL = "https://api.deepseek.com/chat/completions"
         private const val MODEL = "deepseek-chat"

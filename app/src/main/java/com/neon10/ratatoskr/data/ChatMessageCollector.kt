@@ -130,35 +130,70 @@ object ChatMessageCollector {
         )
     }
 
+    // Track context for determining message sender
+    private data class NodeContext(
+        val isFromSelf: Boolean = false,
+        val senderName: String? = null
+    )
+
     private fun collectTextsFromNode(
         node: AccessibilityNodeInfo,
         textParts: MutableList<String>,
         messages: MutableList<ChatMessage>,
         depth: Int,
-        debugLog: StringBuilder
+        debugLog: StringBuilder,
+        parentContext: NodeContext = NodeContext()
     ) {
         try {
             val indent = "  ".repeat(depth)
             
-            // Get text from this node
+            // Get node properties
             val text = node.text?.toString()
             val contentDesc = node.contentDescription?.toString()
             val className = node.className?.toString() ?: "unknown"
+            val viewId = node.viewIdResourceName ?: ""
             
-            // Log first 3 levels for debugging
-            if (depth < 3) {
-                val info = "$indent[$className] text='${text?.take(30) ?: "null"}' desc='${contentDesc?.take(30) ?: "null"}' children=${node.childCount}"
+            // Determine if this is a self/other message based on viewId
+            var currentContext = parentContext
+            
+            // TIM/QQ common patterns for identifying self vs others
+            val isSelfIndicator = viewId.contains("right", ignoreCase = true) ||
+                    viewId.contains("self", ignoreCase = true) ||
+                    viewId.contains("mine", ignoreCase = true) ||
+                    viewId.contains("send", ignoreCase = true)
+            
+            val isOtherIndicator = viewId.contains("left", ignoreCase = true) ||
+                    viewId.contains("other", ignoreCase = true) ||
+                    viewId.contains("recv", ignoreCase = true) ||
+                    viewId.contains("peer", ignoreCase = true)
+            
+            if (isSelfIndicator) {
+                currentContext = currentContext.copy(isFromSelf = true)
+            } else if (isOtherIndicator) {
+                currentContext = currentContext.copy(isFromSelf = false)
+            }
+            
+            // Log nodes with text or interesting viewIds (for deeper analysis)
+            val hasText = !text.isNullOrBlank()
+            val hasInterestingViewId = viewId.isNotEmpty() && 
+                    (viewId.contains("chat") || viewId.contains("msg") || 
+                     viewId.contains("text") || viewId.contains("nick") ||
+                     viewId.contains("avatar") || viewId.contains("bubble"))
+            
+            if (depth < 5 && (hasText || hasInterestingViewId)) {
+                val senderInfo = if (currentContext.isFromSelf) "[我]" else "[对方]"
+                val info = "$indent$senderInfo [$className] viewId='$viewId' text='${text?.take(30) ?: ""}'"
                 Log.d(TAG, info)
-                if (depth < 2) {
+                if (depth < 3 && hasText) {
                     debugLog.appendLine(info)
                 }
             }
 
-            // Add non-empty text
+            // Add text as message with sender info
             if (!text.isNullOrBlank()) {
                 textParts.add(text)
-                // Try to parse as a chat message
-                parseAsMessage(text)?.let { messages.add(it) }
+                // Try to parse as a chat message with sender context
+                parseAsMessage(text, currentContext.isFromSelf)?.let { messages.add(it) }
             }
 
             // Also check contentDescription
@@ -170,7 +205,7 @@ object ChatMessageCollector {
             for (i in 0 until node.childCount) {
                 val child = node.getChild(i)
                 if (child != null) {
-                    collectTextsFromNode(child, textParts, messages, depth + 1, debugLog)
+                    collectTextsFromNode(child, textParts, messages, depth + 1, debugLog, currentContext)
                     child.recycle()
                 }
             }
@@ -180,7 +215,7 @@ object ChatMessageCollector {
         }
     }
 
-    private fun parseAsMessage(text: String): ChatMessage? {
+    private fun parseAsMessage(text: String, isFromSelf: Boolean = false): ChatMessage? {
         // Skip very short texts (likely UI elements)
         if (text.length < 2) return null
 
@@ -188,22 +223,27 @@ object ChatMessageCollector {
         val skipPatterns = listOf(
             "发送", "返回", "更多", "语音", "表情", "相册", "拍摄",
             "视频通话", "语音通话", "转账", "红包", "位置",
-            "Send", "Back", "More", "Voice", "Photo"
+            "Send", "Back", "More", "Voice", "Photo",
+            "按住说话", "输入", "消息", "通话"
         )
-        if (skipPatterns.any { text.contains(it, ignoreCase = true) && text.length < 10 }) {
+        if (skipPatterns.any { text.contains(it, ignoreCase = true) && text.length < 15 }) {
             return null
         }
 
         // Skip time-only texts
         val timePattern = Regex("^\\d{1,2}:\\d{2}(:\\d{2})?$")
         if (timePattern.matches(text.trim())) return null
+        
+        // Skip date patterns like "12月14日" or "今天" etc
+        if (text.matches(Regex("^\\d{1,2}月\\d{1,2}日.*")) || 
+            text in listOf("今天", "昨天", "前天")) {
+            return null
+        }
 
-        // For now, we can't reliably determine sender without more context
-        // Just return as a generic message
         return ChatMessage(
-            sender = null,
+            sender = if (isFromSelf) "我" else "对方",
             content = text,
-            isFromSelf = false
+            isFromSelf = isFromSelf
         )
     }
 
