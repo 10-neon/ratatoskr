@@ -62,6 +62,9 @@ dependencies {
     androidTestImplementation(libs.androidx.ui.test.junit4)
     implementation("io.github.petterpx:floatingx:2.3.7")
     implementation("io.github.petterpx:floatingx-compose:2.3.7")
+    // HTTP client for AI API
+    implementation("com.squareup.okhttp3:okhttp:4.12.0")
+    implementation("com.google.code.gson:gson:2.10.1")
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
 }
