@@ -1,21 +1,11 @@
 package com.neon10.ratatoskr.ui.pages
 
 import android.widget.Toast
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Button
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.setValue
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
@@ -24,51 +14,105 @@ import com.neon10.ratatoskr.data.AiSettingsStore
 @Composable
 fun AiSettingsScreen(modifier: Modifier = Modifier) {
     val context = LocalContext.current
-    
-    // Load from store
+    val scrollState = rememberScrollState()
+
+    // Load states
     var token by remember { mutableStateOf(AiSettingsStore.apiKey) }
+    var baseUrl by remember { mutableStateOf(AiSettingsStore.baseUrl) }
+    var modelName by remember { mutableStateOf(AiSettingsStore.model) }
+    var prompt by remember { mutableStateOf(AiSettingsStore.systemPrompt) }
     var timeout by remember { mutableStateOf(AiSettingsStore.timeout.toString()) }
-    var limit by remember { mutableStateOf(AiSettingsStore.limit.toString()) }
 
     Column(
-        modifier = modifier.fillMaxSize().padding(16.dp),
+        modifier = modifier
+            .fillMaxSize()
+            .padding(16.dp)
+            .verticalScroll(scrollState), // 增加滚动支持
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        Text("AI 设置", style = MaterialTheme.typography.headlineSmall)
+        Text("AI 配置", style = MaterialTheme.typography.headlineSmall)
+
+        // 1. 基础连接设置
         Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
             Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Text("连接设置", style = MaterialTheme.typography.titleMedium)
+
                 OutlinedTextField(
-                    value = token, 
-                    onValueChange = { token = it }, 
+                    value = baseUrl,
+                    onValueChange = { baseUrl = it },
+                    label = { Text("API Base URL") },
+                    placeholder = { Text("https://api.deepseek.com") },
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                OutlinedTextField(
+                    value = token,
+                    onValueChange = { token = it },
                     label = { Text("API Key") },
-                    placeholder = { Text("sk-...") }
+                    modifier = Modifier.fillMaxWidth()
                 )
+
                 OutlinedTextField(
-                    value = limit, 
-                    onValueChange = { limit = it }, 
-                    label = { Text("候选条数(3–5)") }
+                    value = modelName,
+                    onValueChange = { modelName = it },
+                    label = { Text("Model Name") },
+                    placeholder = { Text("deepseek-chat / gpt-3.5-turbo") },
+                    modifier = Modifier.fillMaxWidth()
                 )
+
                 OutlinedTextField(
-                    value = timeout, 
-                    onValueChange = { timeout = it }, 
-                    label = { Text("超时(ms)") }
+                    value = timeout,
+                    onValueChange = { timeout = it },
+                    label = { Text("超时时间 (ms)") },
+                    modifier = Modifier.fillMaxWidth()
                 )
-                Button(onClick = {
-                    // Save to store
-                    AiSettingsStore.apiKey = token
-                    AiSettingsStore.limit = limit.toIntOrNull() ?: 3
-                    AiSettingsStore.timeout = timeout.toIntOrNull() ?: 1500
-                    Toast.makeText(context, "设置已保存", Toast.LENGTH_SHORT).show()
-                }) { 
-                    Text("保存") 
-                }
             }
         }
+
+        // 2. Prompt 设置
         Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
-            Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text("风格权重", style = MaterialTheme.typography.titleMedium)
-                Text("稳妥/推进/幽默：后续版本提供权重滑杆。")
+            Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text("系统提示词 (System Prompt)", style = MaterialTheme.typography.titleMedium)
+                    TextButton(onClick = { prompt = AiSettingsStore.DEFAULT_PROMPT }) {
+                        Text("重置默认")
+                    }
+                }
+
+                OutlinedTextField(
+                    value = prompt,
+                    onValueChange = { prompt = it },
+                    label = { Text("自定义 AI 的角色和回复格式") },
+                    modifier = Modifier.fillMaxWidth().height(180.dp), // 增加高度
+                    maxLines = 10
+                )
+
+                Text(
+                    "提示：保持【保守】【激进】等标签格式，以便应用正确解析并展示分类。",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
             }
         }
+
+        // 保存按钮
+        Button(
+            onClick = {
+                AiSettingsStore.apiKey = token
+                AiSettingsStore.baseUrl = baseUrl
+                AiSettingsStore.model = modelName
+                AiSettingsStore.systemPrompt = prompt
+                AiSettingsStore.timeout = timeout.toIntOrNull() ?: 30000
+                Toast.makeText(context, "设置已保存", Toast.LENGTH_SHORT).show()
+            },
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text("保存所有配置")
+        }
+
+        Spacer(Modifier.height(32.dp))
     }
 }

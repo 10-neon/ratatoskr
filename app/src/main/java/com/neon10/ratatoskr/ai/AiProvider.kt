@@ -1,5 +1,5 @@
 package com.neon10.ratatoskr.ai
 
 object AiProvider {
-    val service: AiService = DeepSeekAiService()
+    val service: AiService = OpenAiLikeService()
 }
