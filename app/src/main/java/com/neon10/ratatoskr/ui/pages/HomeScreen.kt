@@ -23,7 +23,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
-import com.neon10.ratatoskr.ui.overlay.ChatAssistOverlay
+import com.neon10.ratatoskr.ui.components.ChatAssistOverlay
 
 @Composable
 fun HomeScreen(modifier: Modifier = Modifier) {

@@ -1,4 +1,4 @@
-package com.neon10.ratatoskr.ui.overlay
+package com.neon10.ratatoskr.ui.components
 
 import android.content.ClipData
 import android.content.ClipboardManager

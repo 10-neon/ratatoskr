@@ -1,4 +1,4 @@
-package com.neon10.ratatoskr.ui.overlay
+package com.neon10.ratatoskr.ui.components
 
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.AnimatedVisibility
@@ -463,4 +463,3 @@ private fun titleColor(title: String): Color {
         else -> MaterialTheme.colorScheme.primary
     }
 }
-
