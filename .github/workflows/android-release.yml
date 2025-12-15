@@ -1,0 +1,81 @@
+name: Android Release
+
+on:
+  push:
+    branches: [ "release" ]  # 仅在 push 到 release 分支时触发
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write  # 允许发布 Release
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: gradle
+
+      - name: Generate Gradle Wrapper
+        run: gradle wrapper --gradle-version 8.10.2
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
+
+      # 1. 提取版本号 (适配 build.gradle.kts)
+      - name: Extract Version Name
+        run: |
+          # 查找 versionName = "x.x.x" 并提取引号中的内容
+          VERSION_NAME=$(grep 'versionName' app/build.gradle.kts | sed -n 's/.*versionName *= *"\(.*\)".*/\1/p')
+          echo "Extracted Version: $VERSION_NAME"
+          echo "VERSION_NAME=$VERSION_NAME" >> $GITHUB_ENV
+
+      # 2. 编译 Release 包
+      - name: Build Release APK
+        run: ./gradlew assembleRelease
+
+      # 3. 签名 APK (需要配置 GitHub Secrets)
+      - name: Sign Release APK
+        uses: r0adkll/sign-android-release@v1
+        id: sign_app
+        with:
+          releaseDirectory: app/build/outputs/apk/release
+          signingKeyBase64: ${{ secrets.SIGNING_KEY }}
+          alias: ${{ secrets.KEY_ALIAS }}
+          keyStorePassword: ${{ secrets.KEY_STORE_PASSWORD }}
+          keyPassword: ${{ secrets.KEY_PASSWORD }}
+        env:
+          BUILD_TOOLS_VERSION: "34.0.0"
+
+      # 4. 重命名 APK (格式: arm64v8_ratatoskr_{version}.apk)
+      - name: Rename APK
+        id: rename_apk
+        run: |
+          # 获取签名后的文件路径
+          SOURCE_FILE="${{ steps.sign_app.outputs.signedReleaseFile }}"
+          # 构造新文件名
+          TARGET_NAME="arm64v8_ratatoskr_${{ env.VERSION_NAME }}.apk"
+          
+          mv "$SOURCE_FILE" "$TARGET_NAME"
+          echo "Artifact created: $TARGET_NAME"
+          # 将新路径输出给下一步使用
+          echo "apk_path=$TARGET_NAME" >> $GITHUB_OUTPUT
+
+      # 5. 创建 GitHub Release 并上传
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        if: startsWith(github.ref, 'refs/heads/release')
+        with:
+          tag_name: v${{ env.VERSION_NAME }}
+          name: Release v${{ env.VERSION_NAME }}
+          generate_release_notes: true
+          files: ${{ steps.rename_apk.outputs.apk_path }}
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
