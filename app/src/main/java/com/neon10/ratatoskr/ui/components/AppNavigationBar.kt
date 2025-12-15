@@ -30,7 +30,6 @@ fun AppNavigationBar(current: AppPage, onChange: (AppPage) -> Unit) {
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
             Item(AppPage.HOME, current, Icons.Filled.Home, "主页", onChange)
             Item(AppPage.AI_SETTINGS, current, Icons.Filled.Settings, "AI设置", onChange)
-            Item(AppPage.HELP, current, Icons.Filled.HelpOutline, "帮助", onChange)
         }
     }
 }

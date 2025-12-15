@@ -20,7 +20,6 @@ import com.neon10.ratatoskr.ui.AppPage
 import com.neon10.ratatoskr.ui.components.AppNavigationBar
 import com.neon10.ratatoskr.ui.pages.HomeScreen
 import com.neon10.ratatoskr.ui.pages.AiSettingsScreen
-import com.neon10.ratatoskr.ui.pages.HelpScreen
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -36,7 +35,6 @@ class MainActivity : ComponentActivity() {
                     when (page) {
                         AppPage.HOME -> HomeScreen(Modifier.padding(innerPadding))
                         AppPage.AI_SETTINGS -> AiSettingsScreen(Modifier.padding(innerPadding))
-                        AppPage.HELP -> HelpScreen(Modifier.padding(innerPadding))
                     }
                 }
             }

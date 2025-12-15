@@ -46,7 +46,7 @@ object AiSettingsStore {
         }
 
     var timeout: Int
-        get() = prefs?.getInt(KEY_TIMEOUT, 1500) ?: 1500
+        get() = prefs?.getInt(KEY_TIMEOUT, 10000) ?: 10000
         set(value) {
             prefs?.edit()?.putInt(KEY_TIMEOUT, value)?.apply()
         }
